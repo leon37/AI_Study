@@ -13,7 +13,9 @@ def calculate(expression: str) -> str:
     except Exception as e:
         return f"计算出错：{e}"
 
+@tool
 def nickname(name: str) -> str:
+    """输入一个名字，获取该名字对应的外号。"""
     record = {
         '胥邈': '小猪',
         '李听': '卷卷'
@@ -21,9 +23,10 @@ def nickname(name: str) -> str:
     return record.get(name, f"我不知道{name}的外号")
 
 load_dotenv()
-prompt = ChatPromptTemplate([
+prompt = ChatPromptTemplate.from_messages([
     ("system", "你是一个很有帮助的助手，尽你的能力来回答所有问题，并在需要的时候调用工具。"),
-    ("human", "{input}")
+    ("human", "{input}"),
+    ("ai", "{agent_scratchpad}")
 ])
 model = ChatOpenAI(model='gpt-3.5-turbo')
 tools = [calculate, nickname]
@@ -40,7 +43,8 @@ try:
         ret = agent_executor.invoke(
             {"input": user_input},
         )
+        output = ret.get('output', "")
 
-        print(f"assistant: {ret}")
+        print(f"assistant: {output}")
 except KeyboardInterrupt:
     print("Goodbye")

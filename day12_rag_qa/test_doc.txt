@@ -1,0 +1,9 @@
+LangChain 是一个用于构建基于大语言模型（LLM）的应用框架，支持组合多个组件，例如 PromptTemplate、Chains、Tools 和 Agents。
+
+它支持 Retrieval-Augmented Generation（RAG），允许通过向量数据库对外部知识进行检索，并结合模型生成答案。
+
+RAG 通过将用户输入和文档语义向量进行比对，返回相关文档片段，提升回答的准确性。
+
+LangChain 提供 FAISS、Chroma 等多种向量数据库集成方式，用于文档检索。
+
+LangChain 还支持 OpenAI、Anthropic、Cohere 等多家模型提供商接入。
