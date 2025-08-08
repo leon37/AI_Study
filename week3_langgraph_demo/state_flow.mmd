@@ -1,0 +1,45 @@
+flowchart TD
+    A[Start / 用户输入] --> B[写入 State.messages]
+    B --> C{意图路由 / 决策}
+    C -->|知识问答| D[RAG: 文档检索]
+    C -->|需要工具| E[工具选择器]
+    C -->|闲聊/对话| G[LLM 直接生成]
+    C -->|系统/配置| X[系统指令处理]
+
+    D --> D1[向量化查询]
+    D1 --> D2[检索候选 TopK]
+    D2 --> D3[质量过滤/重排]
+    D3 --> D4[写入 State.retrieved_docs]
+    D4 --> H{是否需要人工确认?}
+
+    E --> E1{选择工具}
+    E1 -->|Calculator| T1[调用 Calculator]
+    E1 -->|HTTP API| T2[调用 HTTP 工具]
+    E1 -->|其他| T3[调用自定义工具]
+
+    T1 --> F[写入 State.tool_results]
+    T2 --> F
+    T3 --> F
+    F --> H
+
+    H -->|需要| I[人工确认]
+    I --> J[合并回 State]
+    H -->|不需要| J[继续]
+
+    J --> K[LLM 生成草稿]
+    K --> L{是否需要二次确认?}
+    L -->|需要| I
+    L -->|不需要| M[最终答复草稿]
+
+    M --> N[记忆/画像更新]
+    N --> O[日志追踪]
+    O --> P[输出到终端/网页]
+    P --> Q[End]
+
+    C -->|无法判定| ER1[Fallback: 明确化提问]
+    ER1 --> B
+    T1 -->|异常| ER2[工具异常/超时]
+    T2 -->|异常| ER2
+    T3 -->|异常| ER2
+    D3 -->|空| ER3[RAG 空检索]
+    ER3 --> ER1
