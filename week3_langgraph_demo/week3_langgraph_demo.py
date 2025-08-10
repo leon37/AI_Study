@@ -7,6 +7,7 @@ from langchain_community.document_loaders import UnstructuredMarkdownLoader, Tex
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+from langchain_core.prompts import SystemMessagePromptTemplate, HumanMessagePromptTemplate
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.vectorstores import VectorStore
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -31,6 +32,7 @@ class State(TypedDict):
     retrieved_chunks: str
     intent_prompt: ChatPromptTemplate
     rag_prompt: ChatPromptTemplate
+    clarify_prompt: ChatPromptTemplate
     cur_intent: str
     incoming_input: str
 
@@ -51,13 +53,18 @@ initial_state = State(
         - 技术/知识问答 → qa
         - 寒暄/闲聊/非任务 → chitchat
         - 文档/背景资料 -> rag
-        若不确定，给出最可能标签但confidence < 0.55。"""
-                      )]),
+        若不确定，给出最可能标签但confidence < 0.55。
+        只输出JSON，不要任何额外文字。""")]),
+
     rag_prompt=ChatPromptTemplate.from_messages([
-        SystemMessage(content="""
-        你是一个问答助手，以下是相关背景资料，请根据背景资料回答用户问题，"
-        "如果找不到答案，就说不知道。\n\n背景资料：\n{context}"""),
-        HumanMessage(content="{user_input}")
+        SystemMessagePromptTemplate.from_template("""
+        你是一个问答助手，以下是相关背景资料，请根据背景资料回答用户问题，
+        如果找不到答案，就说不知道。\n\n背景资料：\n{context}"""),
+        HumanMessagePromptTemplate.from_template("{user_input}")
+    ]),
+    clarify_prompt=ChatPromptTemplate.from_messages([
+        SystemMessage(content='你现在需要向用户澄清提问或要求用户补充提问关键信息，需要用户强调当前意图标签'),
+        HumanMessagePromptTemplate.from_template("{question}")
     ]),
     cur_intent='',
     incoming_input='',
@@ -71,10 +78,13 @@ embedding_model = OpenAIEmbeddings(model='text-embedding-3-small')
 
 def intent_router(state: State):
     prompt = state['intent_prompt'].format_messages()
-    prompt.extend(state['messages'][-3:])
+    prompt += state['messages'][-3:]
     rsp = llm.invoke(prompt)
     content = rsp.content
-    content_json = json.loads(content)
+    try:
+        content_json = json.loads(content)
+    except Exception:
+        return Command(update={'cur_intent': 'unknown'})
     if content_json['confidence'] > 0.6:
         return Command(update={'cur_intent': content_json['label']})
     return Command(update={'cur_intent': 'unknown'})
@@ -85,7 +95,7 @@ def condition_router(state: State):
 
 
 def ingest(state: State):
-    return Command(update={'messages': HumanMessage(content=state['incoming_input'])})
+    return Command(update={'messages': [HumanMessage(content=state['incoming_input'])]})
 
 
 def qa(state: State):
@@ -152,10 +162,14 @@ def rag(state: State):
     if state['incoming_input'] == '':
         raise ValueError('user input is empty')
 
-    result = retriever.invoke(state['incoming_input'])
-    context = format_doc(result)
-    new_messages = state['rag_prompt'].format_messages(context=context, user_input=state['incoming_input'])
-    return Command(update={'messages': new_messages})
+    if state['retrieved_chunks'] == '':
+        result = retriever.invoke(state['incoming_input'])
+        context = format_doc(result)
+        new_messages = state['rag_prompt'].format_messages(context=context, user_input=state['incoming_input'])
+        return Command(update={'messages': new_messages, 'retrieved_chunks': context})
+    else:
+        new_messages = state['rag_prompt'].format_messages(context=state['retrieved_chunks'], user_input=state['incoming_input'])
+        return Command(update={'messages': new_messages})
 
 
 def output(state: State):
@@ -163,9 +177,18 @@ def output(state: State):
         raise ValueError('no messages')
     rsp = llm.invoke(state['messages'])
     content = rsp.content
-    print(content)
+    print(f'Assistant: {content}')
     return Command(update={'messages': AIMessage(content=content)})
 
+def clarify(state: State):
+    prompt = state['clarify_prompt'].format_messages(question=state['incoming_input'])
+    return Command(update={'messages': prompt})
+
+def final_assemble(state: State):
+    return state
+
+def hitl(state: State):
+    return state
 
 @tool
 def get_nickname(name):
@@ -187,6 +210,9 @@ graph_builder.add_node("ingest_node", ingest)
 graph_builder.add_node("router_node", intent_router)
 graph_builder.add_node("output_node", output)
 graph_builder.add_node("rag_node", rag)
+graph_builder.add_node("clarify_node", clarify)
+graph_builder.add_node("final_assemble_node", final_assemble)
+graph_builder.add_node("hitl_node", hitl)
 
 graph_builder.add_edge("ingest_node", "router_node")
 graph_builder.add_conditional_edges(
@@ -195,9 +221,11 @@ graph_builder.add_conditional_edges(
     path_map={
         'rag': 'rag_node',
         'qa': 'output_node',
+        'unknown': 'clarify_node',
     }
 )
 graph_builder.add_edge('rag_node', 'output_node')
+graph_builder.add_edge('clarify_node', 'output_node')
 
 graph_builder.set_entry_point("ingest_node")
 graph_builder.set_finish_point("output_node")
