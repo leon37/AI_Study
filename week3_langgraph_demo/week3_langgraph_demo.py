@@ -6,18 +6,19 @@ from langchain_community.docstore import InMemoryDocstore
 from langchain_community.document_loaders import UnstructuredMarkdownLoader, TextLoader, UnstructuredWordDocumentLoader
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage
 from langchain_core.prompts import SystemMessagePromptTemplate, HumanMessagePromptTemplate
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.vectorstores import VectorStore
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langgraph.types import Command
+from langgraph.types import Command, interrupt
 from typing_extensions import TypedDict, Annotated
 from langgraph.graph import add_messages
 from dotenv import load_dotenv
 from langgraph.graph import StateGraph
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain.tools import tool
+from langgraph.checkpoint.memory import InMemorySaver
 
 current_file_path = Path(__file__).resolve()
 project_path = current_file_path.parent.parent
@@ -35,6 +36,8 @@ class State(TypedDict):
     clarify_prompt: ChatPromptTemplate
     cur_intent: str
     incoming_input: str
+    draft: str
+    hitl_result: dict|None
 
 
 initial_state = State(
@@ -66,8 +69,11 @@ initial_state = State(
         SystemMessage(content='你现在需要向用户澄清提问或要求用户补充提问关键信息，需要用户强调当前意图标签'),
         HumanMessagePromptTemplate.from_template("{question}")
     ]),
+
     cur_intent='',
     incoming_input='',
+    draft='',
+    hitl_result=None,
 )
 
 graph_builder = StateGraph(State)
@@ -151,7 +157,7 @@ def embedding() -> VectorStore:
 
 
 vector_store = embedding()
-retriever = vector_store.as_retriever(search_kwargs={"k": 1})
+retriever = vector_store.as_retriever(search_kwargs={"k": 3})
 
 
 def format_doc(docs: list[Document]) -> str:
@@ -173,10 +179,7 @@ def rag(state: State):
 
 
 def output(state: State):
-    if len(state['messages']) == 0:
-        raise ValueError('no messages')
-    rsp = llm.invoke(state['messages'])
-    content = rsp.content
+    content = state['draft']
     print(f'Assistant: {content}')
     return Command(update={'messages': AIMessage(content=content)})
 
@@ -185,10 +188,32 @@ def clarify(state: State):
     return Command(update={'messages': prompt})
 
 def final_assemble(state: State):
-    return state
+    last_5_messages = state['messages'][-5:]
+    draft = llm.invoke(last_5_messages).content
+
+    decision = interrupt({
+        'type': 'hitl_review',
+        'payload': {
+            'draft': draft,
+        }
+    })
+
+    return Command(update={'draft': draft, 'hitl_result': decision})
 
 def hitl(state: State):
-    return state
+    r = state.get("hitl_result") or {"action": "approve"}
+    draft = state.get("draft", "")
+
+    if r.get("action") == "edit" and r.get("new_text"):
+        return {"draft": r["new_text"], "hitl_result": None}
+    elif r.get("action") == "reject":
+        return {"draft": "（已拒绝发送：请完善需求后重试）", "hitl_result": None}
+    else:  # approve
+        return {"hitl_result": None}
+
+
+def htil_condition_router(state: State):
+    return state['hitp_flag']
 
 @tool
 def get_nickname(name):
@@ -205,6 +230,27 @@ def calculate():
     """用于计算的工具"""
     return 12345
 
+tools = [get_nickname, calculate]
+llm_with_tools = llm.bind_tools(tools)
+tool_map = {tool.name: tool for tool in tools}
+
+def tool_router(state: State):
+    rsp = llm_with_tools.invoke(state['messages'][-3:])
+    if not rsp.tool_calls:
+        return state
+
+    outputs = [rsp]
+    for tool_call in rsp.tool_calls:
+        tool_name = tool_call['name']
+        args = tool_call['args']
+
+        if tool_name not in tool_map:
+            return state
+        cur_tool = tool_map[tool_name]
+        ret = cur_tool.invoke(args)
+        tool_msg = ToolMessage(content=json.dumps(ret), name=tool_name, tool_call_id=tool_call['id'])
+        outputs.append(tool_msg)
+    return Command(update={'messages': outputs})
 
 graph_builder.add_node("ingest_node", ingest)
 graph_builder.add_node("router_node", intent_router)
@@ -213,6 +259,7 @@ graph_builder.add_node("rag_node", rag)
 graph_builder.add_node("clarify_node", clarify)
 graph_builder.add_node("final_assemble_node", final_assemble)
 graph_builder.add_node("hitl_node", hitl)
+graph_builder.add_node("tool_router_node", tool_router)
 
 graph_builder.add_edge("ingest_node", "router_node")
 graph_builder.add_conditional_edges(
@@ -222,15 +269,22 @@ graph_builder.add_conditional_edges(
         'rag': 'rag_node',
         'qa': 'output_node',
         'unknown': 'clarify_node',
+        'tool': 'tool_router_node',
     }
 )
-graph_builder.add_edge('rag_node', 'output_node')
-graph_builder.add_edge('clarify_node', 'output_node')
+
+graph_builder.add_edge('rag_node', 'final_assemble_node')
+graph_builder.add_edge('clarify_node', 'final_assemble_node')
+graph_builder.add_edge('tool_router_node', 'final_assemble_node')
+graph_builder.add_edge('final_assemble_node', 'hitl_node')
+graph_builder.add_edge('hitl_node', 'output_node')
 
 graph_builder.set_entry_point("ingest_node")
 graph_builder.set_finish_point("output_node")
 
-graph = graph_builder.compile()
+memory = InMemorySaver()
+graph = graph_builder.compile(checkpointer=memory)
+config = {"configurable": {"thread_id": "1"}}
 
 if __name__ == '__main__':
     while True:
@@ -240,4 +294,21 @@ if __name__ == '__main__':
             break
         else:
             initial_state['incoming_input'] = user_input
-            graph.invoke(initial_state)
+            for event in graph.stream(initial_state, config):
+                if "__interrupt__" in event:
+                    payload = list(event["__interrupt__"])[0].value  # 里面有你传的 draft
+                    print("\n--- HITL 草稿预览 ---\n", payload.get("draft", ""))
+
+                    # ② CLI 收集人工决策（Web的话在前端收集，然后回传到服务端）
+                    sel = input("确认发送？(y=发送 / m=修改 / n=拒绝) > ").strip().lower()
+                    if sel.startswith("m"):
+                        edited = input("请输入修改后的草稿：\n> ")
+                        resume_val = {"action": "edit", "new_text": edited}
+                    elif sel.startswith("n"):
+                        reason = input("拒绝原因（可空）：\n> ")
+                        resume_val = {"action": "reject", "comment": reason}
+                    else:
+                        resume_val = {"action": "approve"}
+
+                    for ev2 in graph.stream(Command(resume=resume_val), config, stream_mode="updates"):
+                        pass
