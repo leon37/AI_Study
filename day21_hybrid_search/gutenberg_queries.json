@@ -1,0 +1,92 @@
+[
+  {
+    "query": "How did Alice fall into Wonderland?",
+    "relevant_docs": [
+      "carroll-alice.txt"
+    ]
+  },
+  {
+    "query": "What role does the White Rabbit play in the story?",
+    "relevant_docs": [
+      "carroll-alice.txt"
+    ]
+  },
+  {
+    "query": "What is the most common phrase spoken by the Queen of Hearts?",
+    "relevant_docs": [
+      "carroll-alice.txt"
+    ]
+  },
+  {
+    "query": "What is special about the Cheshire Cat's smile?",
+    "relevant_docs": [
+      "carroll-alice.txt"
+    ]
+  },
+  {
+    "query": "What happened at the Mad Hatter and March Hare's tea party?",
+    "relevant_docs": [
+      "carroll-alice.txt"
+    ]
+  },
+  {
+    "query": "What does Moby Dick refer to?",
+    "relevant_docs": [
+      "melville-moby_dick.txt"
+    ]
+  },
+  {
+    "query": "Why is Captain Ahab obsessed with hunting the white whale?",
+    "relevant_docs": [
+      "melville-moby_dick.txt"
+    ]
+  },
+  {
+    "query": "Who is Ishmael?",
+    "relevant_docs": [
+      "melville-moby_dick.txt"
+    ]
+  },
+  {
+    "query": "What kind of ship is the Pequod?",
+    "relevant_docs": [
+      "melville-moby_dick.txt"
+    ]
+  },
+  {
+    "query": "What is the identity and characteristics of Queequeg?",
+    "relevant_docs": [
+      "melville-moby_dick.txt"
+    ]
+  },
+  {
+    "query": "Who is the main character of Emma?",
+    "relevant_docs": [
+      "austen-emma.txt"
+    ]
+  },
+  {
+    "query": "What is the relationship between Mr. Knightley and Emma?",
+    "relevant_docs": [
+      "austen-emma.txt"
+    ]
+  },
+  {
+    "query": "How does Harriet Smith's friendship with Emma affect the plot?",
+    "relevant_docs": [
+      "austen-emma.txt"
+    ]
+  },
+  {
+    "query": "What happened in Mr. Elton's marriage proposal scene?",
+    "relevant_docs": [
+      "austen-emma.txt"
+    ]
+  },
+  {
+    "query": "What conflicts were caused by the Box Hill picnic?",
+    "relevant_docs": [
+      "austen-emma.txt"
+    ]
+  }
+]
