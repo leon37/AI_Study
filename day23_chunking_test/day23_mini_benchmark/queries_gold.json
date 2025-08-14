@@ -1,0 +1,298 @@
+[
+  {
+    "qid": "Q1",
+    "query": "How do I authenticate requests to the Widget API?",
+    "gold": [
+      {
+        "doc": "api_guide.md",
+        "sent_ids": [
+          4,
+          5
+        ]
+      }
+    ]
+  },
+  {
+    "qid": "Q2",
+    "query": "What is the default project rate limit and how are bursts handled?",
+    "gold": [
+      {
+        "doc": "api_guide.md",
+        "sent_ids": [
+          7,
+          8,
+          9
+        ]
+      }
+    ]
+  },
+  {
+    "qid": "Q3",
+    "query": "How should clients handle HTTP 429 responses?",
+    "gold": [
+      {
+        "doc": "api_guide.md",
+        "sent_ids": [
+          9
+        ]
+      },
+      {
+        "doc": "faq.md",
+        "sent_ids": [
+          4,
+          5
+        ]
+      },
+      {
+        "doc": "troubleshooting.md",
+        "sent_ids": [
+          2
+        ]
+      }
+    ]
+  },
+  {
+    "qid": "Q4",
+    "query": "How does webhook signature verification work?",
+    "gold": [
+      {
+        "doc": "api_guide.md",
+        "sent_ids": [
+          15,
+          16
+        ]
+      },
+      {
+        "doc": "faq.md",
+        "sent_ids": [
+          8,
+          9
+        ]
+      },
+      {
+        "doc": "troubleshooting.md",
+        "sent_ids": [
+          4
+        ]
+      },
+      {
+        "doc": "terms_of_service.md",
+        "sent_ids": [
+          6
+        ]
+      }
+    ]
+  },
+  {
+    "qid": "Q5",
+    "query": "Explain pagination behavior and cursor expiration.",
+    "gold": [
+      {
+        "doc": "api_guide.md",
+        "sent_ids": [
+          11,
+          12,
+          13
+        ]
+      }
+    ]
+  },
+  {
+    "qid": "Q6",
+    "query": "List the changes related to rate limits and cursors in version 1.8.0.",
+    "gold": [
+      {
+        "doc": "release_notes.md",
+        "sent_ids": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "qid": "Q7",
+    "query": "What is the architecture of the search service and how is recall/precision improved?",
+    "gold": [
+      {
+        "doc": "design_doc.md",
+        "sent_ids": [
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "doc": "design_doc.md",
+        "sent_ids": [
+          4
+        ]
+      }
+    ]
+  },
+  {
+    "qid": "Q8",
+    "query": "What chunking configuration is described as default and why?",
+    "gold": [
+      {
+        "doc": "design_doc.md",
+        "sent_ids": [
+          6,
+          7
+        ]
+      }
+    ]
+  },
+  {
+    "qid": "Q9",
+    "query": "How should code and configuration files be chunked?",
+    "gold": [
+      {
+        "doc": "design_doc.md",
+        "sent_ids": [
+          8
+        ]
+      }
+    ]
+  },
+  {
+    "qid": "Q10",
+    "query": "How long are hot queries cached and what keys are included?",
+    "gold": [
+      {
+        "doc": "design_doc.md",
+        "sent_ids": [
+          10
+        ]
+      }
+    ]
+  },
+  {
+    "qid": "Q11",
+    "query": "Under what conditions will abusive traffic cause suspension?",
+    "gold": [
+      {
+        "doc": "terms_of_service.md",
+        "sent_ids": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "qid": "Q12",
+    "query": "What happens if the API key is missing or invalid?",
+    "gold": [
+      {
+        "doc": "api_guide.md",
+        "sent_ids": [
+          5
+        ]
+      },
+      {
+        "doc": "faq.md",
+        "sent_ids": [
+          1,
+          2
+        ]
+      },
+      {
+        "doc": "troubleshooting.md",
+        "sent_ids": [
+          1
+        ]
+      }
+    ]
+  },
+  {
+    "qid": "Q13",
+    "query": "What are the pagination page size and how to fetch next results?",
+    "gold": [
+      {
+        "doc": "api_guide.md",
+        "sent_ids": [
+          11
+        ]
+      }
+    ]
+  },
+  {
+    "qid": "Q14",
+    "query": "What timeout is enforced for webhooks and how are retries handled?",
+    "gold": [
+      {
+        "doc": "api_guide.md",
+        "sent_ids": [
+          14
+        ]
+      },
+      {
+        "doc": "troubleshooting.md",
+        "sent_ids": [
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "qid": "Q15",
+    "query": "What improvements did the reranker model bring in v1.8.0?",
+    "gold": [
+      {
+        "doc": "release_notes.md",
+        "sent_ids": [
+          5
+        ]
+      }
+    ]
+  },
+  {
+    "qid": "Q16",
+    "query": "How are hybrid retrieval results merged?",
+    "gold": [
+      {
+        "doc": "design_doc.md",
+        "sent_ids": [
+          2
+        ]
+      }
+    ]
+  },
+  {
+    "qid": "Q17",
+    "query": "What headers should clients respect when rate-limited?",
+    "gold": [
+      {
+        "doc": "api_guide.md",
+        "sent_ids": [
+          9
+        ]
+      },
+      {
+        "doc": "troubleshooting.md",
+        "sent_ids": [
+          2
+        ]
+      }
+    ]
+  },
+  {
+    "qid": "Q18",
+    "query": "Where can API keys be rotated and what happens if a key changes?",
+    "gold": [
+      {
+        "doc": "api_guide.md",
+        "sent_ids": [
+          5
+        ]
+      },
+      {
+        "doc": "terms_of_service.md",
+        "sent_ids": [
+          4
+        ]
+      }
+    ]
+  }
+]

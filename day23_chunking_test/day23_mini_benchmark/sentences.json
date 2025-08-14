@@ -1,0 +1,73 @@
+{
+  "api_guide.md": [
+    "# Widget API Guide",
+    "The Widget API allows clients to create, read, update, and delete widgets over HTTP.",
+    "All endpoints are versioned under `/v1` and require an API key sent via the `Authorization` header.",
+    "Requests must be encoded as JSON and responses include a `request_id` for tracing.",
+    "## Authentication",
+    "Include `Authorization: Bearer <API_KEY>` with every request.",
+    "Keys can be rotated from the dashboard.",
+    "If the key is missing or invalid, the API returns HTTP 401 with an error code of `auth_failed`.",
+    "## Rate Limits",
+    "Each project has a default rate limit of 120 requests per minute and 10 concurrent writes.",
+    "Burst traffic is smoothed by a token bucket and exceeding the limit returns HTTP 429 with `retry_after` seconds.",
+    "Use exponential backoff and respect the `Retry-After` header to avoid thundering herd.",
+    "## Pagination",
+    "List endpoints return results in pages of up to 100 items.",
+    "Use the `next_cursor` field to request the next page.",
+    "Cursors expire after 15 minutes.",
+    "If a cursor is expired, start again without the cursor to receive a fresh one.",
+    "## Webhooks",
+    "You can configure webhooks to receive events when widgets are created or deleted.",
+    "Webhooks must respond within 5 seconds; otherwise the delivery is retried with exponential backoff up to 24 hours.",
+    "Signatures are verified with a secret stored in the dashboard to prevent spoofing."
+  ],
+  "faq.md": [
+    "# Frequently Asked Questions",
+    "**Q: Why are my requests failing with 401?**",
+    "A: Most 401 errors occur because the API key is missing or invalid.",
+    "Double-check the `Authorization` header, ensure there are no leading or trailing spaces, and verify the key is active.",
+    "**Q: How do I handle 429 rate limit errors?**",
+    "A: Respect the `Retry-After` header, implement exponential backoff, and reduce concurrency for write operations.",
+    "You can request a higher quota from support if your use case requires sustained bursts.",
+    "**Q: How do webhooks verify authenticity?**",
+    "A: Webhook requests include a signature header derived from a shared secret.",
+    "Recompute the signature on your side and compare it.",
+    "Reject requests with missing or mismatched signatures."
+  ],
+  "design_doc.md": [
+    "# Search Service Design",
+    "The search service provides hybrid retrieval combining lexical BM25 and dense embeddings.",
+    "Queries are normalized, tokenized, and routed through a retriever that merges results by normalized scores.",
+    "A cross-encoder reranker is applied to the top 100 candidates to improve precision at small k.",
+    "## Chunking",
+    "Documents are chunked using a sentence-aware splitter with a target of 512 tokens and 20% overlap.",
+    "This improves recall for cross-sentence entities while keeping latency bounded.",
+    "For code and configuration files, a structural splitter based on fences and headings performs better than fixed-size windows.",
+    "## Caching",
+    "Hot queries are cached for 5 minutes.",
+    "The cache key includes user locale and filters to avoid leakage."
+  ],
+  "release_notes.md": [
+    "# Release Notes 1.8.0",
+    "- Added webhook signature verification toggle in the dashboard.",
+    "- Increased default rate limit from 100 to 120 requests per minute.",
+    "- Pagination cursors now expire after 15 minutes instead of 10.",
+    "- Fixed a bug where 429 responses occasionally missed the `Retry-After` header.",
+    "- Improved reranker model to v3, boosting nDCG@10 by 6% on our internal benchmark."
+  ],
+  "troubleshooting.md": [
+    "# Troubleshooting Guide",
+    "If you receive HTTP 401, verify your API key and ensure the `Authorization` header is present.",
+    "For HTTP 429, implement exponential backoff and honor `Retry-After` to prevent retries overwhelming the system.",
+    "Webhook deliveries that do not respond within 5 seconds are retried automatically for up to 24 hours.",
+    "If webhooks appear forged, verify the signature using the configured secret."
+  ],
+  "terms_of_service.md": [
+    "# Terms of Service (Excerpt)",
+    "Use of the Widget API is subject to rate limiting and fair use.",
+    "Abusive traffic patterns including ignoring `Retry-After` headers may result in suspension.",
+    "Keys may be rotated without notice; continued access requires using the latest valid key.",
+    "By configuring webhooks, you agree to store the shared secret securely and prevent unauthorized disclosure."
+  ]
+}
