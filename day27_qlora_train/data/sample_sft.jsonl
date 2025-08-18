@@ -1,0 +1,3 @@
+{"text": "<|user|>请用三句话介绍Python的优势。<|assistant|>Python语法简洁、生态丰富、跨平台能力强。它拥有大量第三方库，适用于数据科学、Web与自动化。社区活跃，学习门槛低，入门与进阶都很友好。"}
+{"text": "<|user|>写一段50字以内的早安问候。<|assistant|>早安！愿你今天精神饱满，心情明朗，工作顺利，遇见美好的人和事。记得吃早餐，多喝水，保持微笑～"}
+{"text": "<|user|>给我一个SQL示例：查询最近7天下单且金额超过100的用户数。<|assistant|>SELECT COUNT(DISTINCT user_id) AS users FROM orders WHERE order_amount > 100 AND order_time >= NOW() - INTERVAL 7 DAY;"}
